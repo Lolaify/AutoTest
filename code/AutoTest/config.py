@@ -38,6 +38,9 @@ config.dir.storage_root.synth_dataset = 'synth_dataset'
 # folder for experimental results, can be ignored for release version
 config.dir.storage_root.exp = 'experiment'
 
+# Maximum number of cores to use during parallel execution
+config.n_cores = 8
+
 
 # # for docker
 
