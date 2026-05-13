@@ -173,10 +173,15 @@ def min_score_in_each_label_parallel(df, intermediate_result_dir, result_fname, 
             
     min_scores = pd.DataFrame()
     for order in range(n_proc):
-        for i in range(ceil(len(df) / (n_proc * 1000))):
-            seg_fname = os.path.join(intermediate_result_dir, f'{load_corpus.CORPUS_NAME}_min_scores_sherlock_proc_{order}_seg_{i}.pickle')
-            min_scores = pd.concat([min_scores, pd.read_pickle(seg_fname)])
-    min_scores = min_scores[0]
+        worker_len = (len(df) * (order + 1) // n_proc) - (len(df) * order // n_proc)
+        for i in range(ceil(worker_len / 1000)):
+            seg_fname = os.path.join(intermediate_result_dir,
+                                     f'{load_corpus.CORPUS_NAME}_min_scores_sherlock_proc_{order}_seg_{i}.pickle')
+            if os.path.exists(seg_fname):
+                min_scores = pd.concat([min_scores, pd.read_pickle(seg_fname)])
+                os.remove(seg_fname)
+    if not min_scores.empty:
+        min_scores = min_scores[0]
     min_scores.to_pickle(os.path.join(intermediate_result_dir, result_fname))
         
 def get_matching_rows(df, pre, filter_dict):

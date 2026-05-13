@@ -150,10 +150,16 @@ def dist_val_scores_parallel(df, dir, result_fname, n_proc):
             
     dist_val_scores = pd.DataFrame()
     for order in range(n_proc):
-        for i in range(ceil(len(df) / (n_proc * 1000))):
+        worker_len = (len(df) * (order + 1) // n_proc) - (len(df) * order // n_proc)
+        for i in range(ceil(worker_len / 1000)):
             seg_fname = os.path.join(dir, f"{result_fname}_proc_{order}_seg_{i}.pkl")
-            dist_val_scores = pd.concat([dist_val_scores, pd.read_pickle(seg_fname)])
-    dist_val_scores[0].to_pickle(os.path.join(dir, result_fname))     
+            if os.path.exists(seg_fname):
+                dist_val_scores = pd.concat([dist_val_scores, pd.read_pickle(seg_fname)])
+                os.remove(seg_fname)
+    if not dist_val_scores.empty:
+        dist_val_scores[0].to_pickle(os.path.join(dir, result_fname))
+    else:
+        dist_val_scores.to_pickle(os.path.join(dir, result_fname))
 
 def compute_cohenh_parallel_core(ns, start, end, queue):
     df = pd.DataFrame(ns.df[start : end], columns = ns.df_col, index = ns.df_idx[start : end])
