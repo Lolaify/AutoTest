@@ -149,11 +149,11 @@ def generate_pre_parallel(df, ratio_list, distance_list, thres, sample_size, n_p
 def get_matching_rows(df, pre):
     assert pre[0] == 'embed'
     ref, ratio, dist = pre[2], pre[3], pre[4]
-    df = df[df['dist_val'].apply(lambda x: len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
+    df = df[df['dist_val'].apply(lambda x: len(x) > 0 and len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
     if len(df) == 0: return df
-    df = df[df['dist_val'].apply(lambda x: mean(len(re.findall(r'[A-Za-z]+', v)) for v in x) <= 2)]
+    df = df[df['dist_val'].apply(lambda x: len(x) > 0 and mean(len(re.findall(r'[A-Za-z]+', v)) for v in x) <= 2)]
     if len(df) == 0: return df
-    df = df[df['dist_val'].apply(lambda x: embed_in_dist_percent_gt_ratio(x, ref, ratio, dist))]
+    df = df[df['dist_val'].apply(lambda x: len(x) > 0 and embed_in_dist_percent_gt_ratio(x, ref, ratio, dist))]
     return df
 
 def get_matching_rows_parallel_core(ns, start, end, queue):
