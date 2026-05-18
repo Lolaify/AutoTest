@@ -72,7 +72,7 @@ def get_matching_rows(df, pre, dist_val_scores):
     assert pre[0] == 'doduo'
     label, ratio, score_bar = pre[1:4]
     df = pd.concat([df, pd.DataFrame(dist_val_scores, columns=['dist_val_scores'])], axis=1).copy()
-    df = df[df['dist_val'].apply(lambda x: len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
+    df = df[df['dist_val'].apply(lambda x: len(x) > 0 and len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
     if len(df) == 0: return df
     label_idx = class_list.index(label)
     matching_rows = df
@@ -85,7 +85,7 @@ def get_matching_rows_parallel_core(ns, start, end, queue):
     df = pd.DataFrame(ns.df[start : end], columns = ns.df_col, index = ns.df_idx[start : end])
     dist_val_scores = pd.Series(ns.dist_val_scores[start : end], index = ns.dist_val_scores_idx[start : end])
     df = pd.concat([df, pd.DataFrame(dist_val_scores, columns=['dist_val_scores'])], axis=1)
-    df = df[df['dist_val'].apply(lambda x: len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
+    df = df[df['dist_val'].apply(lambda x: len(x) > 0 and len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
     if len(df) == 0: return
     pre_list = ns.pre_list
     idx_dict = {}
