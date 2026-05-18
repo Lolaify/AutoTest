@@ -59,7 +59,16 @@ def predict(data: pd.Series, model = None, verbose = False):
     if model is None:
         validate_sherlock()
         model = global_sherlock_model
-    feature_vectors = pd.read_csv(StringIO(extract_features_non_write_to_file(data)), dtype=np.float32)
+    
+    if len(data) == 0:
+        return np.array([]), np.array([]), []
+
+    extracted = extract_features_non_write_to_file(data)
+    feature_vectors = pd.read_csv(StringIO(extracted), dtype=np.float32)
+    
+    if feature_vectors.empty or 'col_entropy' not in feature_vectors.columns:
+        return np.zeros((len(data), len(class_list))), np.zeros(len(data)), ['address'] * len(data)
+
     y_pred, score, predicted_labels = model.predict(feature_vectors, "sherlock")
     y_pred = np.nan_to_num(y_pred, nan = 0) # replace all nan with 0
     score = np.nan_to_num(score, nan = 0)
@@ -93,7 +102,7 @@ def rows_with_ratio_val_gt_score_bar(df, label, ratio, score_bar, model = None):
 def build_filter_dict(df, model = None):
     filter_dict = {}
     # df = df[df['dist_val'].apply(lambda x: any(utils.contains_non_alphabet(v) or utils.contain_digit(v) for v in x) == False)]
-    df = df[df['dist_val'].apply(lambda x: len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
+    df = df[df['dist_val'].apply(lambda x: len(x) > 0 and len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
     if len(df) == 0: return filter_dict
     y_pred, score, predicted_labels = predict(df['dist_val'], model = model)
     all_labels = list(set(predicted_labels))
@@ -107,7 +116,7 @@ def build_filter_dict(df, model = None):
 def build_filter_dict_parallel_core(ns, start, end, queue):
     filter_dict = {}
     df = pd.DataFrame(ns.df[start : end], columns = ns.df_col, index = ns.df_idx[start : end])
-    df = df[df['dist_val'].apply(lambda x: len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
+    df = df[df['dist_val'].apply(lambda x: len(x) > 0 and len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
     if len(df) == 0: 
         queue.put(filter_dict)
         return
@@ -190,7 +199,7 @@ def get_matching_rows(df, pre, filter_dict):
     matching_idx = filter_dict[label]
     matching_rows = df.loc[df.index.isin(matching_idx)]
     if len(matching_rows) == 0: return matching_rows
-    matching_rows = matching_rows[matching_rows['dist_val'].apply(lambda x: len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
+    matching_rows = matching_rows[matching_rows['dist_val'].apply(lambda x: len(x) > 0 and len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
     if len(matching_rows) == 0: return matching_rows
     matching_rows = rows_with_ratio_val_gt_score_bar(matching_rows, label, ratio, score_bar)
     return matching_rows
@@ -203,7 +212,7 @@ def get_matching_rows_parallel_core(ns, start, end, queue):
     for label, matching_idx in filter_dict.items():
         matching_rows = df.loc[df.index.isin(matching_idx)]
         if len(matching_rows) == 0: continue
-        matching_rows = matching_rows[matching_rows['dist_val'].apply(lambda x: len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
+        matching_rows = matching_rows[matching_rows['dist_val'].apply(lambda x: len(x) > 0 and len([v for v in x if not utils.contains_non_english_chars(v)]) >= 0.8 * len(x))]
         if len(matching_rows) == 0: continue
         score_dict = build_score_dict(matching_rows, label, model = None)
         sorted_row_scores = matching_rows['dist_val'].apply(lambda x: sorted([score_dict[v] for v in x], reverse = True))
