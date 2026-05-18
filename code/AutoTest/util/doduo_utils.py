@@ -57,6 +57,10 @@ def predict(dist_val: list, model = None):
     return y_pred, label_idx, label_score, predicted_label
 
 def predict_multi_row(df: pd.DataFrame, col_name: str = 'dist_val', model = None):
+    if df.empty:
+        # Return empty numpy arrays/lists in the expected format
+        return np.array([]), np.array([]), np.array([]), []
+
     results = df.apply(lambda x: predict(x[col_name], model = model), axis = 1, result_type='expand')
     y_pred = results[0].to_list()
     label_idx = results[1].to_numpy()
