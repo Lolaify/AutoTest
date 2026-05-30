@@ -47,6 +47,26 @@ if any([rule[0][0] == 'doduo' for rule in rule_list]):
 pre_list = list(set([r[0] for r in rule_list]))
 test_matching_dict = utils.build_matching_idx_dict_from_pre_list_parallel(df, pre_list, n_proc = 2, sbert_dist_val_embeddings = sbert_dist_val_embeddings, doduo_dist_val_scores = doduo_dist_val_scores)
 
+pd.DataFrame(list(test_matching_dict.items()), columns=["key", "value"]).to_csv(f"./results/detected_outliers/pre_list_{sdc_fname}_on_{csv_fname}.csv", index=False)
+
+# Print SDCs where pre-condition was fulfilled (matched at least one row)
+
+filtered = [x for x in  test_matching_dict.keys() if len(test_matching_dict[x]) > 0]
+fulfilled_sdcs = []
+for rule in rule_list:
+    if tuple(rule[0]) in list(test_matching_dict.keys()) and test_matching_dict[tuple(rule[0])]:
+        fulfilled_sdcs.append(rule)
+
+print(f"\nSDCs with fulfilled pre-conditions: {len(fulfilled_sdcs)}/{len(rule_list)}")
+for i, sdc in enumerate(fulfilled_sdcs):
+    pre_condition = sdc[0]
+    matching_rows = test_matching_dict[tuple(pre_condition)]
+    headers = df.loc[matching_rows, 'header'].unique().tolist()
+    # Find the index of this SDC in rule_list to get the natural language description
+    sdc_idx = rule_list.index(sdc)
+    pre_condition_nl = rule_df.iloc[sdc_idx]['pre-condition']
+    print(f"{i + 1}. Headers: {headers}")
+    print(f"    Pre-condition: {pre_condition_nl}")
 
 results = []
 if any([rule[1][0] == 'cta' for rule in rule_list]):

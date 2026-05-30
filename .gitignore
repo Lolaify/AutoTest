@@ -8,3 +8,5 @@ code/AutoTest/results/
 code/AutoTest/.idea/
 
 **/__pycache__/
+
+.idea/
